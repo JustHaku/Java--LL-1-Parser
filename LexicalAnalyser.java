@@ -11,12 +11,10 @@
  **/
 import java.io.* ;
 
-public class LexicalAnalyser
-{
+public class LexicalAnalyser{
 
 	/** Represents a textual and symbolic reserved word. */
-	class ReservedWord
-	{
+	class ReservedWord{
 		/** The text used in source. */
 		public String text ;
 		/** The type (one of the class constants from Token) of this word. */
@@ -27,8 +25,7 @@ public class LexicalAnalyser
 		  @param t The text as seen in source.
 		  @param s The type of this word, typically a class constant from Token
 		 */
-		public ReservedWord(String t, int s)
-		{
+		public ReservedWord(String t, int s){
 			text = t ;
 			symbol = s ;
 		} // end of constructor method
@@ -56,8 +53,7 @@ public class LexicalAnalyser
 	/* State-change character and offset counts. */
 	private char currentCharacter ;
 	private String currentLine ;
-	private int currentOffset,
-			currentLineNumber ;
+	private int currentOffset,currentLineNumber ;
 
 	/* input buffer */
 	private StringBuffer currentText = new StringBuffer() ;
@@ -67,16 +63,14 @@ public class LexicalAnalyser
 	  @param t The text as seen in source.
 	  @param s The type of this word, typically a class constant from Token
 	 */
-	private void setReservedWord(String t, int s)
-	{
+	private void setReservedWord(String t, int s){
 		symbols[noOfSymbols] = new ReservedWord(t, s) ;
 		noOfSymbols++ ;
 	} // end of method setReservedWord
 
 
 	/** Sets all initial variables and adds the language's reserved words to the symbol table. */
-	private void initialiseScanner()
-	{
+	private void initialiseScanner(){
 		noOfSymbols = 0 ;
 		setReservedWord("begin", Token.beginSymbol) ;
 		setReservedWord("call", Token.callSymbol) ;
@@ -102,8 +96,7 @@ public class LexicalAnalyser
 	  @param fileName The file to read.
 	  @throws IOException if any read errors occur during parsing.
 	 */
-	public LexicalAnalyser(String fileName) throws IOException
-	{
+	public LexicalAnalyser(String fileName) throws IOException{
 		initialiseScanner() ;
 
 		sourceFileName = fileName;
@@ -117,7 +110,7 @@ public class LexicalAnalyser
 	/**
 	 * Simply returns the current loaded input file name
 	 */
-	public String getFilename() {
+	public String getFilename(){
 		return sourceFileName;
 	}
 
@@ -125,18 +118,15 @@ public class LexicalAnalyser
 
 	  @throws IOException in the event that something like velociraptor attack happens to the input stream.
 	 */
-	private void getNextCharacter() throws IOException
-	{
+	private void getNextCharacter()throws IOException{
 		if (currentLine == null)
 			currentCharacter = EOF ;
-		else if (currentOffset >= currentLine.length())
-		{
+		else if (currentOffset >= currentLine.length()){
 			currentLine = sourceFile.readLine() ;
 			currentOffset = 0 ;
 			currentCharacter = '\n' ;
 		}
-		else
-		{
+		else{
 			currentCharacter = currentLine.charAt(currentOffset) ;
 			currentOffset++ ;
 		}
@@ -148,10 +138,8 @@ public class LexicalAnalyser
 	  @throws IOException in the event that the file cannot be read.
 	  @return the next token from the source file.
 	 */
-	public Token getNextToken() throws IOException
-	{
-		if (firstCall)
-		{
+	public Token getNextToken()throws IOException{
+		if (firstCall){
 			getNextCharacter() ;
 			firstCall = false ;
 		}
@@ -159,11 +147,9 @@ public class LexicalAnalyser
 		while ((currentCharacter == ' ') || (currentCharacter == '\t') ||
 				(currentCharacter == '\n') || (currentCharacter == '-'))
 		{
-			if (currentCharacter == '-')
-			{
+			if (currentCharacter == '-'){
 				getNextCharacter() ;
-				if (currentCharacter == '-')
-				{
+				if (currentCharacter == '-'){
 					while (currentCharacter != '\n')
 						getNextCharacter() ;
 				}
@@ -176,8 +162,7 @@ public class LexicalAnalyser
 			getNextCharacter() ;
 		}
 
-		if (Character.isLetter(currentCharacter))
-		{
+		if (Character.isLetter(currentCharacter)){
 			currentText.setLength(0) ;
 			while ((Character.isLetter(currentCharacter)) ||
 					(Character.isDigit(currentCharacter)))
@@ -197,123 +182,100 @@ public class LexicalAnalyser
 			else
 				return new Token(Token.identifier, currentText, currentLineNumber) ;
 		}
-		else if (Character.isDigit(currentCharacter))
-		{
+		else if (Character.isDigit(currentCharacter)){
 			currentText.setLength(0);
-			while (Character.isDigit(currentCharacter))
-			{
+			while (Character.isDigit(currentCharacter)){
 				currentText.append(currentCharacter) ;
 				getNextCharacter() ;
 			}
-			if (currentCharacter == '.')
-			{
+			if (currentCharacter == '.'){
 				currentText.append(currentCharacter) ;
 				getNextCharacter() ;
-				while (Character.isDigit(currentCharacter))
-				{
+				while (Character.isDigit(currentCharacter)){
 					currentText.append(currentCharacter) ;
 					getNextCharacter() ;
 				}
 			}
 			return new Token(Token.numberConstant, currentText, currentLineNumber) ;
 		}
-		else if (currentCharacter == '"')
-		{
+		else if (currentCharacter == '"'){
 			getNextCharacter() ;
 			currentText.setLength(0) ;
-			while (currentCharacter != '"')
-			{
+			while (currentCharacter != '"'){
 				currentText.append(currentCharacter) ;
 				getNextCharacter() ;
 			}
 			getNextCharacter() ;
 			return new Token(Token.stringConstant, currentText, currentLineNumber) ;
 		}
-		else if (currentCharacter == ':')
-		{
+		else if (currentCharacter == ':'){
 			getNextCharacter() ;
-			if (currentCharacter == '=')
-			{
+			if (currentCharacter == '='){
 				getNextCharacter() ;
 				return new Token(Token.becomesSymbol, ":=", currentLineNumber) ;
 			}
 			else
 				return new Token(Token.colonSymbol, ":", currentLineNumber) ;
 		}
-		else if (currentCharacter == '>')
-		{
+		else if (currentCharacter == '>'){
 			getNextCharacter() ;
-			if (currentCharacter == '=')
-			{
+			if (currentCharacter == '='){
 				getNextCharacter() ;
 				return new Token(Token.greaterEqualSymbol, ">=", currentLineNumber) ;
 			}
 			else
 				return new Token(Token.greaterThanSymbol, ">", currentLineNumber) ;
 		}
-		else if (currentCharacter == '<')
-		{
+		else if (currentCharacter == '<'){
 			getNextCharacter() ;
-			if (currentCharacter == '=')
-			{
+			if (currentCharacter == '='){
 				getNextCharacter() ;
 				return new Token(Token.lessEqualSymbol, "<=", currentLineNumber) ;
 			}
 			else
 				return new Token(Token.lessThanSymbol, "<", currentLineNumber) ;
 		}
-		else if (currentCharacter == '/')
-		{
+		else if (currentCharacter == '/'){
 			getNextCharacter() ;
-			if (currentCharacter == '=')
-			{
+			if (currentCharacter == '='){
 				getNextCharacter() ;
 				return new Token(Token.notEqualSymbol, "/=", currentLineNumber) ;
 			}
 			else
 				return new Token(Token.divideSymbol, "/", currentLineNumber) ;
 		}
-		else if (currentCharacter == '=')
-		{
+		else if (currentCharacter == '='){
 			getNextCharacter() ;
 			return new Token(Token.equalSymbol, "=", currentLineNumber) ;
 		}
-		else if (currentCharacter == ',')
-		{
+		else if (currentCharacter == ','){
 			getNextCharacter() ;
 			return new Token(Token.commaSymbol, ",", currentLineNumber) ;
 		}
-		else if (currentCharacter == ';')
-		{
+		else if (currentCharacter == ';'){
 			getNextCharacter() ;
 			return new Token(Token.semicolonSymbol, ";", currentLineNumber) ;
 		}
-		else if (currentCharacter == '+')
-		{
+		else if (currentCharacter == '+'){
 			getNextCharacter() ;
 			return new Token(Token.plusSymbol, "+", currentLineNumber) ;
 		}
-		else if (currentCharacter == '*')
-		{
+		else if (currentCharacter == '*'){
 			getNextCharacter() ;
 			return new Token(Token.timesSymbol, "*", currentLineNumber) ;
 		}
-		else if (currentCharacter == '(')
-		{
+		else if (currentCharacter == '('){
 			getNextCharacter() ;
 			return new Token(Token.leftParenthesis, "(", currentLineNumber) ;
 		}
-		else if (currentCharacter == ')')
-		{
+		else if (currentCharacter == ')'){
 			getNextCharacter() ;
 			return new Token(Token.rightParenthesis, ")", currentLineNumber) ;
 		}
-		else if (currentCharacter == EOF)
-		{
+		else if (currentCharacter == EOF){
 			return new Token(Token.eofSymbol, "", currentLineNumber) ;
 		}
-		else
-		{
+		else{
 			currentText = new StringBuffer(currentCharacter) ;
 			getNextCharacter() ;		// added 21st January 2005
 			return new Token(Token.errorSymbol, currentText, currentLineNumber) ;
@@ -321,16 +283,14 @@ public class LexicalAnalyser
 	} // end of method getNextToken
 
 	/** Entry point to text Lexer */
-	public static void main(String[] args) throws IOException
-	{
+	public static void main(String[] args) throws IOException{
 		BufferedReader din = new BufferedReader(new InputStreamReader(System.in)) ;
 		System.err.print("file? ") ;
 		System.err.flush() ;
 		String fileName = din.readLine().trim() ;
 		LexicalAnalyser lex = new LexicalAnalyser(fileName) ;
 		Token t = null ;
-		do
-		{
+		do{
 			t = lex.getNextToken() ;
 			System.out.println(t) ;
 		}

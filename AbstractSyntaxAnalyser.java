@@ -12,8 +12,7 @@
 
 import java.io.* ;
 
-public abstract class AbstractSyntaxAnalyser
-{
+public abstract class AbstractSyntaxAnalyser{
 	/** The lexical analyser to process input using. */
 	LexicalAnalyser lex ;
 	/** A cache of the token to be processed next. */
@@ -32,19 +31,17 @@ public abstract class AbstractSyntaxAnalyser
 	  @param ps The PrintStream object to read tokens from.
 	  @throws IOException in the event that the PrintStream object can no longer read.
 	*/
-	public void parse( PrintStream ps ) throws IOException
-	{
+	public void parse(PrintStream ps) throws IOException {
 		ps.println( lex.getFilename() );
 		myGenerate = new Generate();
-		try {
+		try{
 			nextToken = lex.getNextToken() ;
 			_statementPart_() ;
 			acceptTerminal(Token.eofSymbol) ;
 			myGenerate.reportSuccess() ;
 			ps.println( "OK\n" );
 		}
-		catch( CompilationException ex )
-		{
+		catch( CompilationException ex ){
 			ps.println( "Compilation Exception" );
 			ps.println( ex.toTraceString() );
 			ps.println( "STOP\n" );

@@ -8,9 +8,7 @@
  *
  *
  **/
-public class Token
-{
-
+public class Token {
 	public static final int becomesSymbol = 1 ;
 	public static final int beginSymbol = 2 ;
 	public static final int callSymbol = 3 ;
@@ -73,8 +71,7 @@ public class Token
 	  @param t The original string recognised from the source file.
 	  @param l The line number of the original string.
 	 */
-	public Token(int s, String t, int l)
-	{
+	public Token(int s, String t, int l){
 		symbol = s ;
 		text = t ;
 		lineNumber = l ;
@@ -87,8 +84,7 @@ public class Token
 	  @param t The original string recognised from the source file.
 	  @param l The line number of the original string.
 	 */
-	public Token(int s, StringBuffer t, int l)
-	{
+	public Token(int s, StringBuffer t, int l){
 		symbol = s ;
 		text = new String(t) ;
 		lineNumber = l ;
@@ -99,8 +95,7 @@ public class Token
 	  @param i The value of a symbol, typically as a class constant from Token.
 	  @return The name of this symbol.
 	 */
-	public static String getName(int i)
-	{
+	public static String getName(int i){
 		if ((i < 1) || (i > names.length))
 			return "UNKNOWN" ;
 		else
@@ -108,8 +103,7 @@ public class Token
 	} // end of method getName
 
 	/** @see Object.toString */
-	public String toString()
-	{
+	public String toString(){
 		String tt = "token " + getName(symbol) ;
 		if ((symbol == identifier) ||
 				(symbol == numberConstant) ||

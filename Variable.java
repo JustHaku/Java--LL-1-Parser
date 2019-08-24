@@ -1,13 +1,13 @@
-public class Variable implements Comparable<Variable> {
+public class Variable implements Comparable<Variable>{
 
-    public enum Type {
+    public enum Type{
         UNKNOWN( 0, "BadType" ),
         NUMBER( 1, "Number" ),
         STRING( 2, "String" );
 
         public final int value;
         public final String name;
-        private Type( int v, String n ) {
+        private Type( int v, String n ){
             this.value = v;
             this.name = n;
         }
@@ -16,17 +16,17 @@ public class Variable implements Comparable<Variable> {
 
     public final String identifier;
     public final Variable.Type type;
-    public Variable( String identifier, Variable.Type type ) {
+    public Variable( String identifier, Variable.Type type ){
         this.identifier = identifier;
         this.type = type;
     }
 
-    public int compareTo( Variable v ) {
+    public int compareTo( Variable v ){
         return this.type.compareTo(v.type) * this.identifier.compareTo(v.identifier);
     }
 
     @Override
-    public String toString() {
+    public String toString(){
         return "Variable: " +this.identifier+ " <" +this.type.name+ ">";
     }
 }
