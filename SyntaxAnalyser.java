@@ -10,6 +10,8 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
 
     String fileName;
     CompilationException CompExcep;
+    List <Integer> errors = new ArrayList<Integer>();
+
 
     /**
      * Takes in a file name and creates a lexical analyser for it
@@ -29,39 +31,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
         }
     }
 
-    /** Starts processing for the first top level token */
-
-    public void _statementPart_()throws IOException, CompilationException{
-
-        try{
-            myGenerate.commenceNonterminal("StatementPart");
-
-            if(nextToken.symbol == Token.beginSymbol){
-                myGenerate.insertTerminal(nextToken);
-                acceptTerminal(Token.beginSymbol);
-                StatementList();
-            }
-
-            else{
-                Error(Token.beginSymbol);
-            }
-            if (nextToken.symbol == Token.endSymbol){
-                myGenerate.insertTerminal(nextToken);
-                acceptTerminal(Token.endSymbol);
-                myGenerate.finishNonterminal("StatementPart");
-                myGenerate.insertTerminal(nextToken);
-            }
-            else{
-
-                Error(Token.endSymbol);
-            }
-        }
-        catch(CompilationException e){
-            throw e;
-        }
-    }
-
-    /** Checks the input symbol for its validity and throws an error if it's incorrect */
+    /** Checks the symbol to accept for its validity and throws an error if it's incorrect */
 
     public void acceptTerminal(int symbol)throws IOException, CompilationException{
 
@@ -69,8 +39,51 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             nextToken = lex.getNextToken();
         }
         else{
-            System.out.println("\nThe given symbol was not be matched with the expected symbol.");
-            Error(symbol);
+            System.out.println("\nThe Accept check recieved the following erroneous symbol: " + Token.getName(nextToken.symbol));
+            myGenerate.flag = true;
+            Error();
+        }
+    }
+
+    /** Throws an error if a symbol that wasn't expected is encountered */
+
+    public void Error() throws IOException, CompilationException{
+        if(myGenerate.flag == true) {
+            String errorMessage = "";
+
+            for (int x = 0; x < errors.size(); x++) {
+                errorMessage = errorMessage + "[" + Token.getName(errors.get(x)) + "]";
+            }
+            myGenerate.reportError(nextToken, errorMessage);
+        }
+    }
+
+    /** Starts processing for the first top level token */
+
+    public void _statementPart_()throws IOException, CompilationException{
+        try{
+            myGenerate.commenceNonterminal("StatementPart");
+
+            switch (nextToken.symbol) {
+                case Token.beginSymbol:
+                    myGenerate.insertTerminal(nextToken);
+                    acceptTerminal(Token.beginSymbol);
+                    StatementList();
+                    myGenerate.insertTerminal(nextToken);
+                    acceptTerminal(Token.endSymbol);
+                    myGenerate.finishNonterminal("StatementPart");
+                    myGenerate.insertTerminal(nextToken);
+                    break;
+                default:
+                    errors.add(Token.beginSymbol);
+                    errors.add(Token.endSymbol);
+                    myGenerate.flag = true;
+            }
+            Error();
+            myGenerate.finishNonterminal("StatementPart");
+        }
+        catch(CompilationException e){
+            throw e;
         }
     }
 
@@ -81,13 +94,20 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             myGenerate.commenceNonterminal("StatementList");
             Statement();
 
-           while (nextToken.symbol == Token.semicolonSymbol ){
+            switch (nextToken.symbol){
+                case Token.semicolonSymbol:
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.semicolonSymbol);
                     StatementList();
                     break;
+                case Token.endSymbol:
+                    break;
+                default:
+                    errors.add(Token.semicolonSymbol);
+                    errors.add(Token.endSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("StatementList");
         }
         catch(CompilationException e){
@@ -101,11 +121,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
         try{
             myGenerate.commenceNonterminal("Statement");
 
-            switch (nextToken.symbol) {
-
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
-
+            switch (nextToken.symbol){
                 case Token.identifier:
                     AssignmentStatement();
                     break;
@@ -118,14 +134,25 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                 case Token.callSymbol:
                     ProcedureStatement();
                     break;
-                case Token.untilSymbol:
+                case Token.doSymbol:
                     UntilStatement();
                     break;
                 case Token.forSymbol:
                     ForStatement();
                     break;
+                case Token.semicolonSymbol:
+                    break;
+                default:
+                    errors.add(Token.identifier);
+                    errors.add(Token.ifSymbol);
+                    errors.add(Token.whileSymbol);
+                    errors.add(Token.callSymbol);
+                    errors.add(Token.doSymbol);
+                    errors.add(Token.forSymbol);
+                    errors.add(Token.semicolonSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("Statement");
         }
         catch(CompilationException e){
@@ -150,12 +177,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             acceptTerminal(Token.becomesSymbol);
 
             switch (nextToken.symbol){
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
                 case Token.identifier:
-                    Expression();
-                    break;
-                case Token.leftParenthesis:
                     Expression();
                     break;
                 case Token.numberConstant:
@@ -164,6 +186,9 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     var = new Variable(identifier.text, type);
                     myGenerate.addVariable(var);
                     break;
+                case Token.leftParenthesis:
+                    Expression();
+                    break;
                 case Token.stringConstant:
                     myGenerate.insertTerminal(nextToken);
                     type = Variable.Type.STRING;
@@ -171,27 +196,17 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     myGenerate.addVariable(var);
                     acceptTerminal(Token.stringConstant);
                     break;
+                case Token.endSymbol:
+                    break;
+                default:
+                    errors.add(Token.identifier);
+                    errors.add(Token.numberConstant);
+                    errors.add(Token.leftParenthesis);
+                    errors.add(Token.stringConstant);
+                    errors.add(Token.endSymbol);
+                    myGenerate.flag = true;
             }
-
-
-
-//            while (nextToken.symbol == Token.stringConstant){
-//                myGenerate.insertTerminal(nextToken);
-//                type = Variable.Type.STRING;
-//                var = new Variable(identifier.text, type);
-//                myGenerate.addVariable(var);
-//                acceptTerminal(Token.stringConstant);
-//                break;
-//            }
-//            while (nextToken.symbol == Token.numberConstant){
-//
-//            }
-
-//            while (nextToken.symbol == Token.identifier || nextToken.symbol == Token.leftParenthesis){
-//                Expression();
-//                break;
-//            }
-
+            Error();
             myGenerate.finishNonterminal("AssignmentStatement");
         }
         catch(CompilationException e){
@@ -213,8 +228,6 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             StatementList();
 
             switch (nextToken.symbol){
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
                 case Token.endSymbol:
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.endSymbol);
@@ -230,8 +243,13 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.ifSymbol);
                     break;
+                default:
+                    errors.add(Token.endSymbol);
+                    errors.add(Token.elseSymbol);
+                    errors.add(Token.ifSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("IfStatement");
         }
         catch(CompilationException e){
@@ -244,6 +262,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
     public void WhileStatement()throws IOException, CompilationException{
         try{
             myGenerate.commenceNonterminal("WhileStatement");
+
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.whileSymbol);
             Condition();
@@ -254,6 +273,8 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             acceptTerminal(Token.endSymbol);
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.loopSymbol);
+
+            Error();
             myGenerate.finishNonterminal("WhileStatement");
         }
         catch(CompilationException e){
@@ -266,6 +287,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
     public void ProcedureStatement()throws IOException, CompilationException{
         try{
             myGenerate.commenceNonterminal("ProcedureStatement");
+
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.callSymbol);
             myGenerate.insertTerminal(nextToken);
@@ -276,6 +298,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.rightParenthesis);
 
+            Error();
             myGenerate.finishNonterminal("ProcedureStatement");
         }
         catch(CompilationException e){
@@ -288,12 +311,15 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
     public void UntilStatement()throws IOException, CompilationException{
         try{
             myGenerate.commenceNonterminal("UntilStatement");
+
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.doSymbol);
             StatementList();
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.untilSymbol);
             Condition();
+
+            Error();
             myGenerate.finishNonterminal("UntilStatement");
         }
         catch(CompilationException e){
@@ -306,6 +332,7 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
     public void ForStatement()throws IOException, CompilationException{
         try{
             myGenerate.commenceNonterminal("ForStatement");
+
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.forSymbol);
             myGenerate.insertTerminal(nextToken);
@@ -326,6 +353,8 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             acceptTerminal(Token.endSymbol);
             myGenerate.insertTerminal(nextToken);
             acceptTerminal(Token.loopSymbol);
+
+            Error();
             myGenerate.finishNonterminal("ForStatement");
         }
         catch(CompilationException e){
@@ -338,16 +367,39 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
     public void ArgumentList()throws IOException, CompilationException{
         try{
             myGenerate.commenceNonterminal("ArgumentList");
-            myGenerate.insertTerminal(nextToken);
-            acceptTerminal(Token.identifier);
 
-            while (nextToken.symbol == Token.commaSymbol){
-                myGenerate.insertTerminal(nextToken);
-                acceptTerminal(Token.commaSymbol);
-                ArgumentList();
-                break;
+            switch (nextToken.symbol){
+                case Token.identifier:
+                    myGenerate.insertTerminal(nextToken);
+                    acceptTerminal(Token.identifier);
+                    break;
+                case Token.commaSymbol:
+                    break;
+                case Token.rightParenthesis:
+                    break;
+                default:
+                    errors.add(Token.identifier);
+                    errors.add(Token.commaSymbol);
+                    errors.add(Token.rightParenthesis);
+                    myGenerate.flag = true;
             }
-
+            switch (nextToken.symbol){
+                case Token.commaSymbol:
+                    myGenerate.insertTerminal(nextToken);
+                    acceptTerminal(Token.commaSymbol);
+                    ArgumentList();
+                    break;
+                case Token.identifier:
+                    break;
+                case Token.rightParenthesis:
+                    break;
+                default:
+                    errors.add(Token.commaSymbol);
+                    errors.add(Token.identifier);
+                    errors.add(Token.rightParenthesis);
+                    myGenerate.flag = true;
+            }
+            Error();
             myGenerate.finishNonterminal("ArgumentList");
         }
         catch(CompilationException e){
@@ -365,8 +417,6 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             ConditionalOperator();
 
             switch (nextToken.symbol){
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
                 case Token.identifier:
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.identifier);
@@ -379,8 +429,13 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.stringConstant);
                     break;
+                default:
+                    errors.add(Token.identifier);
+                    errors.add(Token.numberConstant);
+                    errors.add(Token.stringConstant);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("Condition");
         }
         catch(CompilationException e){
@@ -395,8 +450,6 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             myGenerate.commenceNonterminal("ConditionalOperator");
 
             switch (nextToken.symbol){
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
                 case Token.greaterThanSymbol:
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.greaterThanSymbol);
@@ -421,8 +474,16 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.lessEqualSymbol);
                     break;
+                default:
+                    errors.add(Token.greaterThanSymbol);
+                    errors.add(Token.greaterEqualSymbol);
+                    errors.add(Token.equalSymbol);
+                    errors.add(Token.notEqualSymbol);
+                    errors.add(Token.lessThanSymbol);
+                    errors.add(Token.lessEqualSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("ConditionalOperator");
         }
         catch(CompilationException e){
@@ -437,13 +498,44 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             myGenerate.commenceNonterminal("Expression");
             Term();
 
+//            switch (nextToken.symbol) {
+//                case Token.semicolonSymbol:
+//                    break;
+//                case Token.rightParenthesis:
+//                    break;
+//                case Token.endSymbol:
+//                    break;
+//                default:
+//                    errors.add(Token.plusSymbol);
+//                    errors.add(Token.minusSymbol);
+//                    errors.add(Token.semicolonSymbol);
+//                    errors.add(Token.rightParenthesis);
+//                    errors.add(Token.endSymbol);
+//                    myGenerate.flag = true;
+//
+//            }
             while (nextToken.symbol == Token.plusSymbol || nextToken.symbol == Token.minusSymbol) {
-                myGenerate.insertTerminal(nextToken);
-                acceptTerminal(nextToken.symbol);
-                Expression();
-                break;
+                switch (nextToken.symbol) {
+                    case Token.plusSymbol:
+                        myGenerate.insertTerminal(nextToken);
+                        acceptTerminal(Token.plusSymbol);
+                        Expression();
+                        break;
+                    case Token.minusSymbol:
+                        myGenerate.insertTerminal(nextToken);
+                        acceptTerminal(Token.minusSymbol);
+                        Expression();
+                        break;
+                    default:
+                        errors.add(Token.plusSymbol);
+                        errors.add(Token.minusSymbol);
+                        errors.add(Token.semicolonSymbol);
+                        errors.add(Token.rightParenthesis);
+                        errors.add(Token.endSymbol);
+                        myGenerate.flag = true;
+                }
             }
-
+            Error();
             myGenerate.finishNonterminal("Expression");
         }
         catch(CompilationException e){
@@ -459,21 +551,37 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             Factor();
 
             switch (nextToken.symbol){
-                default:
-                    break;
                 case Token.timesSymbol:
                     myGenerate.insertTerminal(nextToken);
-                    acceptTerminal(nextToken.symbol);
+                    acceptTerminal(Token.timesSymbol);
                     Term();
                     break;
-
                 case Token.divideSymbol:
                     myGenerate.insertTerminal(nextToken);
-                    acceptTerminal(nextToken.symbol);
+                    acceptTerminal(Token.divideSymbol);
                     Term();
                     break;
+                case Token.semicolonSymbol:
+                    break;
+                case Token.rightParenthesis:
+                    break;
+                case Token.minusSymbol:
+                    break;
+                case Token.plusSymbol:
+                    break;
+                case Token.endSymbol:
+                    break;
+                default:
+                    errors.add(Token.timesSymbol);
+                    errors.add(Token.divideSymbol);
+                    errors.add(Token.semicolonSymbol);
+                    errors.add(Token.rightParenthesis);
+                    errors.add(Token.minusSymbol);
+                    errors.add(Token.plusSymbol);
+                    errors.add(Token.endSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("Term");
         }
         catch(CompilationException e){
@@ -488,8 +596,6 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
             myGenerate.commenceNonterminal("Factor");
 
             switch (nextToken.symbol){
-                default:
-                    System.out.println("Received the following erroneous symbol: " + Token.getName(nextToken.symbol));
                 case Token.identifier:
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.identifier);
@@ -505,16 +611,20 @@ public class SyntaxAnalyser extends AbstractSyntaxAnalyser{
                     myGenerate.insertTerminal(nextToken);
                     acceptTerminal(Token.rightParenthesis);
                     break;
+                case Token.endSymbol:
+                    break;
+                default:
+                    errors.add(Token.identifier);
+                    errors.add(Token.numberConstant);
+                    errors.add(Token.leftParenthesis);
+                    errors.add(Token.endSymbol);
+                    myGenerate.flag = true;
             }
-
+            Error();
             myGenerate.finishNonterminal("Factor");
         }
         catch(CompilationException e){
             throw e;
         }
-    }
-
-    public void Error(int expectedSymbol)throws IOException, CompilationException{
-        myGenerate.reportError(nextToken,Token.getName(expectedSymbol));
     }
 }

@@ -81,7 +81,7 @@ public abstract class AbstractGenerate{
     * reportSuccess
     *
     **/
-    public void reportSuccess() {
+    public void reportSuccess(){
         System.out.println( "rggSUCCESS" );
     } // end of method reportSuccess
 
